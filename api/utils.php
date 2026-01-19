@@ -28,7 +28,7 @@ function generate_pdf($content) {
 // JWT functions
 function create_jwt($user_id) {
     $payload = [
-        'iss' => 'localhost',
+        'iss' => 'https://quick-pdf-generator.onrender.com',
         'iat' => time(),
         'exp' => time() + 3600,
         'user_id' => $user_id
