@@ -10,7 +10,7 @@ if (!defined('RATE_LIMIT')) {
 }
 
 if (!defined('TOKEN_SECRET')) {
-    define('TOKEN_SECRET', (string)getenv('JWT_SECRET'));
+    define('TOKEN_SECRET', (string)getenv('TOKEN_SECRET'));
 }
 
 // Database connection
