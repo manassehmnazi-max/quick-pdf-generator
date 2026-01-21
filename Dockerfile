@@ -1,7 +1,8 @@
 FROM php:8.2-apache
 
 # Enable Apache rewrite
-RUN a2enmod rewrite
+RUN a2enmod rewrite \ 
+&& sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
 
 # 🔴 IMPORTANT: Serve /api as web root
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/api
@@ -20,7 +21,7 @@ RUN apt-get update && apt-get install -y \
 
 # App files
 WORKDIR /var/www/html
-COPY . .
+COPY . /var/www/html/
 
 # Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
