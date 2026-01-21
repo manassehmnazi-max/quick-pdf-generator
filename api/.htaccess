@@ -1,6 +1,16 @@
+# Enable URL rewriting
 RewriteEngine On
 
-# Allow access to API files
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
+# Avoid redirect loops
+RewriteBase /
+
+# If the request is for an existing file or directory, serve it directly
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Redirect root URL to api/index.php
+RewriteRule ^$ api/index.php [L]
+
+# Optional: clean URLs for /api/ endpoints (serve the actual files)
 RewriteRule ^api/(.*)$ api/$1 [L]
