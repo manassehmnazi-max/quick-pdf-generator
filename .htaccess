@@ -1,13 +1,7 @@
 RewriteEngine On
 
 # Allow direct access to /api folder
-RewriteCond %{REQUEST_URI} ^/api/
-RewriteRule ^ - [L]
+RewriteRule ^api/ - [L]
 
-# Do NOT rewrite real files or directories
-RewriteCond %{REQUEST_FILENAME} -f [OR]
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule ^ - [L]
-
-# Root URL → api/index.php
+# Redirect root URL to api/index.php
 RewriteRule ^$ api/index.php [L]
