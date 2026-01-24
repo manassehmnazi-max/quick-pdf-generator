@@ -1,19 +1,34 @@
 <?php
 require_once __DIR__ . '/../vendor/autoload.php';
 
-\Stripe\Stripe::setApiKey(getenv('STRIPE_SECRET_KEY'));
+use Stripe\Stripe;
+use Stripe\PaymentIntent;
+
+Stripe::setApiKey(getenv('STRIPE_SECRET_KEY'));
 
 /**
- * Create a payment intent
+ * Create a Stripe payment intent for a user
  * @param float $amount Amount in USD (e.g., 10.50)
+ * @param int $user_id ID of the user making the payment
  * @return array
  */
-function create_payment_intent($amount) {
+function create_payment_intent($amount, $user_id) {
+    // Validate amount
+    if (!is_numeric($amount) || $amount <= 0) {
+        return ['error' => 'Invalid amount'];
+    }
+
+    // Convert dollars to cents (Stripe expects integer)
+    $amount_cents = intval($amount * 100);
+
     try {
-        $intent = \Stripe\PaymentIntent::create([
-            'amount' => intval($amount * 100), // Stripe expects cents
+        $intent = PaymentIntent::create([
+            'amount' => $amount_cents,
             'currency' => 'usd',
             'automatic_payment_methods' => ['enabled' => true],
+            'metadata' => [
+                'user_id' => $user_id // essential for webhook unlock
+            ]
         ]);
 
         return [
@@ -21,9 +36,9 @@ function create_payment_intent($amount) {
             'status' => $intent->status,
             'id' => $intent->id
         ];
+
     } catch (\Stripe\Exception\ApiErrorException $e) {
-        return [
-            'error' => $e->getMessage()
-        ];
+        // Return structured error
+        return ['error' => $e->getMessage()];
     }
 }

@@ -11,6 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+// Ensure Authorization header is read even if Apache strips it
 if (!isset($_SERVER['HTTP_AUTHORIZATION']) && function_exists('apache_request_headers')) {
     $headers = apache_request_headers();
     if (isset($headers['Authorization'])) {
@@ -25,6 +26,7 @@ if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
     echo json_encode(['error' => 'JWT missing']);
     exit;
 }
+
 $token = $matches[1];
 $userId = validate_jwt($token);
 if (!$userId) {
@@ -33,14 +35,19 @@ if (!$userId) {
     exit;
 }
 
-// Get amount from POST
-$amount = floatval($_POST['amount'] ?? 0);
+// Get amount from POST (optional; default $5)
+$amount = floatval($_POST['amount'] ?? 5.00);
 if ($amount <= 0) {
     http_response_code(400);
     echo json_encode(['error' => 'Invalid amount']);
     exit;
 }
 
-// Create payment intent
-$result = create_payment_intent($amount);
+// Create Stripe payment intent for this user
+$result = create_payment_intent($amount, $userId);
+
+// Return JSON response
+if (isset($result['error'])) {
+    http_response_code(400);
+}
 echo json_encode($result);
