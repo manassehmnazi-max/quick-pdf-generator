@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/utils.php';
 header('Content-Type: application/json');
 
 $action = $_POST['action'] ?? $_GET['action'] ?? null;
