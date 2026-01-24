@@ -18,15 +18,6 @@ if (!defined('DB_PATH') || !DB_PATH) {
     throw new Exception('DB_PATH is not defined');
 }
 
-// Validate JWT secret from environment
-$jwtSecret = getenv('JWT_SECRET');
-
-if (!$jwtSecret || !is_string($jwtSecret) || strlen($jwtSecret) < 32) {
-    throw new Exception('JWT_SECRET is missing or too short (must be at least 32 characters)');
-}
-
-define('TOKEN_SECRET', $jwtSecret);
-
 /**
  * =========================
  * DATABASE

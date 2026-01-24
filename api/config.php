@@ -10,7 +10,15 @@ if (!defined('RATE_LIMIT')) {
 }
 
 if (!defined('TOKEN_SECRET')) {
-    define('TOKEN_SECRET', (string)getenv('TOKEN_SECRET'));
+    $secret = getenv('JWT_SECRET');
+
+    if (!$secret || !is_string($secret) || strlen($secret) < 32) {
+        die(json_encode([
+            'error' => 'JWT_SECRET missing or too short'
+        ]));
+    }
+
+    define('TOKEN_SECRET', $secret);
 }
 
 // Database connection
