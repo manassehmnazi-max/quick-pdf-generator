@@ -4,41 +4,53 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use Stripe\Stripe;
 use Stripe\PaymentIntent;
 
-Stripe::setApiKey(getenv('STRIPE_SECRET_KEY'));
+// Set Stripe secret key
+$stripeSecret = getenv('STRIPE_SECRET_KEY');
+if (!$stripeSecret) {
+    die(json_encode(['error' => 'STRIPE_SECRET_KEY not set']));
+}
+
+Stripe::setApiKey($stripeSecret);
 
 /**
- * Create a Stripe payment intent for a user
- * @param float $amount Amount in USD (e.g., 10.50)
- * @param int $user_id ID of the user making the payment
+ * Create a Stripe Payment Intent
+ *
+ * @param float $amount Amount in USD (e.g. 5.00)
+ * @param int $userId
  * @return array
  */
-function create_payment_intent($amount, $user_id) {
-    // Validate amount
-    if (!is_numeric($amount) || $amount <= 0) {
+function create_payment_intent(float $amount, int $userId): array
+{
+    if ($amount <= 0) {
         return ['error' => 'Invalid amount'];
     }
 
-    // Convert dollars to cents (Stripe expects integer)
-    $amount_cents = intval($amount * 100);
-
     try {
         $intent = PaymentIntent::create([
-            'amount' => $amount_cents,
+            'amount' => (int) round($amount * 100), // cents
             'currency' => 'usd',
-            'automatic_payment_methods' => ['enabled' => true],
+
+            // 🔒 Disable redirect-based payment methods
+            'automatic_payment_methods' => [
+                'enabled' => true,
+                'allow_redirects' => 'never',
+            ],
+
+            // Track who paid
             'metadata' => [
-                'user_id' => $user_id // essential for webhook unlock
-            ]
+                'user_id' => (string) $userId,
+            ],
         ]);
 
         return [
+            'id' => $intent->id,
             'client_secret' => $intent->client_secret,
             'status' => $intent->status,
-            'id' => $intent->id
         ];
 
     } catch (\Stripe\Exception\ApiErrorException $e) {
-        // Return structured error
-        return ['error' => $e->getMessage()];
+        return [
+            'error' => $e->getMessage(),
+        ];
     }
 }
