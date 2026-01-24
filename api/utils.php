@@ -7,88 +7,77 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
-/**
- * =========================
- * ENV + CONSTANT VALIDATION
- * =========================
- */
-
-// Validate DB_PATH
-if (!defined('DB_PATH') || !DB_PATH) {
-    throw new Exception('DB_PATH is not defined');
-}
-
-/**
- * =========================
- * DATABASE
- * =========================
- */
-
+// ---------------------
 // SQLite connection
+// ---------------------
 function get_db() {
-    try {
-        $db = new PDO('sqlite:' . DB_PATH);
-        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        return $db;
-    } catch (PDOException $e) {
-        throw new Exception('Database connection failed');
-    }
+    global $db;
+    return $db;
 }
 
-/**
- * =========================
- * PDF GENERATION
- * =========================
- */
-
+// ---------------------
+// PDF Generation
+// ---------------------
 function generate_pdf($content) {
     require_once __DIR__ . '/../vendor/setasign/fpdf/fpdf.php';
 
     $pdf = new FPDF();
     $pdf->AddPage();
-    $pdf->SetFont('Arial', 'B', 16);
-    $pdf->MultiCell(0, 10, $content);
+    $pdf->SetFont('Arial','B',16);
+    $pdf->MultiCell(0,10,$content);
 
-    $filename = uniqid('pdf_', true) . '.pdf';
-    $path = __DIR__ . "/../storage/pdfs/$filename";
-
-    $pdf->Output('F', $path);
+    $filename = uniqid() . '.pdf';
+    $fullPath = PDF_PATH . $filename;
+    $pdf->Output('F', $fullPath);
 
     return $filename;
 }
 
-/**
- * =========================
- * JWT FUNCTIONS
- * =========================
- */
-
+// ---------------------
+// JWT Functions
+// ---------------------
 function create_jwt($user_id) {
     $payload = [
-        'iss' => 'quick-pdf-generator',
+        'iss' => 'https://quick-pdf-generator.onrender.com',
         'iat' => time(),
         'exp' => time() + 3600, // 1 hour
-        'user_id' => (int) $user_id
+        'user_id' => $user_id
     ];
-
     return JWT::encode($payload, TOKEN_SECRET, 'HS256');
 }
 
 function validate_jwt($token) {
     try {
         $decoded = JWT::decode($token, new Key(TOKEN_SECRET, 'HS256'));
-        return $decoded->user_id ?? false;
+        return $decoded->user_id;
     } catch (Exception $e) {
         return false;
     }
 }
 
-/**
- * =========================
- * HELPERS
- * =========================
- */
+// ---------------------
+// Authorization Middleware
+// ---------------------
+function require_auth() {
+    $headers = getallheaders();
+    $authHeader = $headers['Authorization'] ?? '';
+    $token = str_replace('Bearer ', '', $authHeader);
 
-function sanitize($str) {
-    return htmlspecialchars(trim((string) $str), ENT_QUOTES, 'UTF-8');
+    $user_id = validate_jwt($token);
+
+    if (!$user_id) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Unauthorized']);
+        exit;
+    }
+
+    return $user_id;
 }
+
+// ---------------------
+// Sanitize Input
+// ---------------------
+function sanitize($str) {
+    return htmlspecialchars(trim($str));
+}
+?>
